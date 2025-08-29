@@ -1,5 +1,6 @@
 (ns fsms.core
   (:require [fsms.dpda-parser :as dpda-parser]
+            [fsms.nfa :as nfa]
             [fsms.pda :as pda]
             [fsms.turing-machine :as tm]
             [fsms.turing-parser :as tm-parser]
@@ -13,9 +14,6 @@
             [clojure.java.io :as io])
   (:gen-class))
 
-
-
-
 (defn validate-automaton [accept?-fn automaton config]
   (let [err1 (for [word (:accept config)
                    :when (not (accept?-fn automaton word))]
@@ -28,7 +26,7 @@
 (defn to-bin [n]
   (if (zero? n)
     "0"
-    (loop [acc () 
+    (loop [acc ()
            n n]
       (if (zero? n)
         (apply str acc)
@@ -53,6 +51,16 @@
               res (result-fn (accept?-fn automaton input))]
         :when (not= res output)]
     (str "Input " input " should yield '" output "' but was '" res "' instead.")))
+
+(defn validate-nfa [deterministic file config]
+  (let [nfa (nfa/file->nfa file deterministic)
+        config (config/load-config config)]
+    (validate-automaton (build-accept?-fn nfa/initial-configurations
+                                          nfa/next-states
+                                          nfa/accept?
+                                          nfa/discard?)
+                        nfa
+                        config)))
 
 (defn validate-dpda [file config]
   (let [dpda (dpda-parser/file->dpda file)
@@ -109,7 +117,7 @@
                            tm/result-from-configuration)))
 
 (defn build-initial-environment [input]
-  (cond (integer? input) {"x1" input} 
+  (cond (integer? input) {"x1" input}
         (vector? input) (into {} (map-indexed (fn [idx e] [(str "x" (inc idx)) e]) input))
         :else (throw (IllegalArgumentException. "unknown input type; expected integer or vector of integers, got: " input))))
 
@@ -118,7 +126,7 @@
         :let [res (interp-fn program (build-initial-environment input))]
         :when (not (or (and (map? res) (= output (get res "x0" 0))) (= output res :timeout)))]
     (if (map? res)
-      (str "Input " input " should yield '" output "' but was '" (get res "x0" 0) "' instead. Full environment: " (dissoc res :programs.goto/pc))  
+      (str "Input " input " should yield '" output "' but was '" (get res "x0" 0) "' instead. Full environment: " (dissoc res :programs.goto/pc))
       (str "Error during execution with input: " input " - " res))))
 
 (defn validate-loop-program [file config]
@@ -136,8 +144,8 @@
     (if (instance? instaparse.gll.Failure program)
       [(clojure.string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
       (let
-        [config (config/load-config config)
-         analysis-res (while-progs/analyse program)]
+       [config (config/load-config config)
+        analysis-res (while-progs/analyse program)]
         (if analysis-res
           analysis-res
           (validate-program program while-progs/interp config))))))
@@ -161,12 +169,13 @@
         (println 0)
         (println (:score opts))))))
 
-
 (defn -main [& args]
   (let [{:keys [action args options exit-message ok?]} (cli/validate-args args)]
     (if exit-message
       (cli/exit (if ok? 0 1) exit-message)
       (case action
+        "check-nfa" (execute-with-output (partial validate-nfa false) args options)
+        "check-dfa" (execute-with-output (partial validate-nfa true) args options)
         "check-dpda" (execute-with-output validate-dpda args options)
         "check-tm"   (execute-with-output validate-tm args options)
         "check-dtm"  (execute-with-output validate-dtm args options)
@@ -174,7 +183,6 @@
         "check-calc-dtm" (execute-with-output validate-calc-dtm args options)
         "check-loop-program" (execute-with-output validate-loop-program args options)
         "check-while-program" (execute-with-output validate-while-program args options)
-        "check-goto-program" (execute-with-output validate-goto-program args options)
-        ))))
+        "check-goto-program" (execute-with-output validate-goto-program args options)))))
 
 

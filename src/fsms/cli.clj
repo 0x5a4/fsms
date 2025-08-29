@@ -6,6 +6,12 @@
   "java -jar mytool.jar COMMAND [ARGS*]
 
 Valid options for COMMAND are:
+  check-nfa <nfa-file> <config-file>
+   | Check an implementation of a NFA against
+   | a number of accepted and rejected words.
+  check-dfa <dfa-file> <config-file>
+   | Like check-nfa, but input automata
+   | must be deterministic
   check-dpda <dpda-file> <config-file>
    | Check an implementation of a DPDA against
    | a number of accepted and rejected words.
@@ -24,12 +30,11 @@ Valid options for COMMAND are:
   check-while-program <while-file> <config-file>
    | Like check-calc-dtm, but input is a WHILE-program.
   check-goto-program <goto-file> <config-file>
-   | Like check-calc-dtm, but input is a GOTO-program."
-  )
+   | Like check-calc-dtm, but input is a GOTO-program.")
 
 (defn usage [summary]
-  (str valid-cli-options \newline \newline 
-       "Valid options for ARGS are:" \newline 
+  (str valid-cli-options \newline \newline
+       "Valid options for ARGS are:" \newline
        summary))
 
 (def cli-options
@@ -39,28 +44,26 @@ Valid options for COMMAND are:
    ["-s" "--score SCORE" "Maximum score for the exercise."
     :default 10
     :parse-fn parse-long]
-   ["-h" "--help"] ])
-
+   ["-h" "--help"]])
 
 (defn validate-args [args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
     (cond
       (:help options) ; help => exit OK with usage summary
-        {:exit-message (usage summary) :ok? true}
+      {:exit-message (usage summary) :ok? true}
       errors ; errors => exit with description of errors
-        {:exit-message (clojure.string/join errors)}
+      {:exit-message (clojure.string/join errors)}
       ;; custom validation on arguments
-      (and (contains? #{"check-dpda" "check-tm" "check-dtm" "check-lba"
+      (and (contains? #{"check-dfa" "check-nfa" "check-dpda" "check-tm" "check-dtm" "check-lba"
                         "check-calc-dtm"
                         "check-loop-program" "check-while-program" "check-goto-program"}
                       (first arguments))
            (= 3 (count arguments)))
-         {:action (first arguments) :args (rest arguments)
-          :options options}
+      {:action (first arguments) :args (rest arguments)
+       :options options}
 
       :else ; failed custom validation => exit with usage summary
-        {:exit-message (usage summary)})))
-
+      {:exit-message (usage summary)})))
 
 (defn exit [status msg]
   (println msg)
