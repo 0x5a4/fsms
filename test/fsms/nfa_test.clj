@@ -14,19 +14,24 @@
   (testing "the successor configurations are calculated correctly"
     (are [nfa config succs] (= (set succs) (set (next-states nfa config)))
       ;; wrong state
-      {:delta [{:state "z0" :symbol "0" :to "z1"}]}
+      {:delta {{:state "z0" :symbol "0"} ["z0"]}}
       {:state "z1" :input "007"}
       []
 
       ;; wrong symbol
-      {:delta [{:state "z0" :symbol "0" :to "z1"}]}
+      {:delta {{:state "z0" :symbol "0"} ["z0"]}}
       {:state "z1" :input "42"}
       []
 
       ;; correct state and symbol
-      {:delta [{:state "z0" :symbol "0" :to "z1"}]}
+      {:delta {{:state "z0" :symbol "0"} ["z1"]}}
       {:state "z0" :input "007"}
-      [{:state "z1" :input "07"}])))
+      [{:state "z1" :input "07"}]
+
+      ;; non-deterministic configurations
+      {:delta {{:state "z0" :symbol "0"} ["z1" "z5"]}}
+      {:state "z0" :input "007"}
+      [{:state "z1" :input "07"} {:state "z5" :input "07"}])))
 
 (deftest nfa-accepting-test
   (testing "configurations are accepted or rejected accordingly"
@@ -64,15 +69,20 @@
     (are [program nfa] (= nfa (build-nfa (nfa-parser program)))
       ;; start state
       "start z0"
-      {:start ["z0"] :final-states [] :delta []}
+      {:start ["z0"] :final-states [] :delta {}}
 
       ;; final state
       "final z0"
-      {:start [] :final-states ["z0"] :delta []}
+      {:start [] :final-states ["z0"] :delta {}}
 
-      ;; transition
+      ;; single transition
       "(z0, a) -> z2"
-      {:start [] :final-states [] :delta [{:state "z0" :symbol "a" :to "z2"}]}
+      {:start [] :final-states [] :delta {{:state "z0" :symbol "a"} ["z2"]}}
+
+      ;; non-deterministic transitions
+      "(z0, a) -> z2
+       (z0, a) -> z5"
+      {:start [] :final-states [] :delta {{:state "z0" :symbol "a"} ["z2" "z5"]}}
 
       ;; complete example
       "start z0
@@ -81,26 +91,24 @@
        (z1, a) -> z1"
       {:start ["z0"]
        :final-states ["z1"]
-       :delta [{:state "z0" :symbol "a" :to "z1"}
-               {:state "z1" :symbol "a" :to "z1"}]})))
+       :delta {{:state "z0" :symbol "a"} ["z1"]
+               {:state "z1" :symbol "a"} ["z1"]}})))
 
 (deftest nfa-validate-deterministic
   (testing "deterministic nfas get recognized as such"
     (are [nfa] (deterministic? nfa)
       {:start ["z1"]
-       :delta [{:state "z0" :symbol "a" :to "z1"}
-               {:state "z0" :symbol "b" :to "z2"}]}
+       :delta {{:state "z0" :symbol "a"} ["z1"]
+               {:state "z0" :symbol "b"} ["z2"]}}
 
       {:start ["z1"]
-       :delta [{:state "z0" :symbol "a" :to "z1"}
-               {:state "z1" :symbol "a" :to "z2"}]}))
+       :delta {{:state "z0" :symbol "a"} ["z1"]
+               {:state "z1" :symbol "a"} ["z2"]}}))
 
   (testing "non-deterministic nfas get recognized as such"
     (are [nfa] (not (deterministic? nfa))
       {:start ["z1" "z2"]
-       :delta [{:state "z0" :symbol "a" :to "z1"}
-               {:state "z0" :symbol "b" :to "z2"}]}
+       :delta {{:state "z0" :symbol "a" :to "z1"} ["z1" "z2"]}}
 
       {:start ["z1"]
-       :delta [{:state "z0" :symbol "a" :to "z1"}
-               {:state "z0" :symbol "a" :to "z2"}]})))
+       :delta {{:state "z0" :symbol "a" :to "z1"} ["z1" "z2"]}})))
