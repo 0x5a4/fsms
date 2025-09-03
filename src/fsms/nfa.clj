@@ -21,10 +21,14 @@
   (insta/parser
    "<NFA> := DEF (BREAK DEF)*
     <DEF> := WS (START | FINAL | TRANS)? WS
-    TRANS := <'('> WS STATE WS <','> WS SYM WS <')'> WS <'->'> WS STATE
+    TRANS := LBRACK STATE COMMA SYM RBRACK ARROW STATE
     START := <'start'> (WS STATE)+
     FINAL := <'final'> (WS STATE)+
     <SYM> := #'[a-zA-Z0-9_]'
+    <LBRACK> := WS <'('> WS
+    <RBRACK> := WS <')'> WS
+    <ARROW> := WS <'->'> WS
+    <COMMA> := WS <','> WS
     <STATE> := #'[a-zA-Z0-9_\\-]+'
     <BREAK> := <'\\n'>
     <WS> := <#' '>*"))

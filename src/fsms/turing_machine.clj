@@ -1,5 +1,6 @@
 (ns fsms.turing-machine
-  (:use [fsms.commons]) )
+  (:use [fsms.commons])
+  (:require [instaparse.core :as insta]))
 
 (def MAX-BAND-LENGTH 30)
 
@@ -13,20 +14,19 @@
 
 (defn turing-step
   "Executes a single step of a turing machine."
-  [tm config] 
+  [tm config]
   (let [delta (:delta tm)
         transs (get delta {:state (get config :state) :symbol (get config :current)})]
     (for [{:keys [direction symbol] :as trans} transs
-          :let [{:keys [state band-left current band-right]} config]] 
+          :let [{:keys [state band-left current band-right]} config]]
       {:state (get trans :state)
        :band-left (case direction
                     "L" (let [b' (apply str (butlast band-left))] (if (empty? b') blank b'))
                     "N" band-left
-                    "R" (str band-left symbol)
-                    )
+                    "R" (str band-left symbol))
        :current (case direction
                   "L" (str (last band-left))
-                  "N" (get trans :symbol) 
+                  "N" (get trans :symbol)
                   "R" (str (first band-right)))
        :band-right (case direction
                      "L" (apply str symbol band-right)
@@ -42,21 +42,21 @@
 
 (defn lba-step
   "Executes a single step of an LBA."
-  [tm config] 
+  [tm config]
   (when-not (:current config)
     (throw (IllegalStateException. "LBA attempted read outside of its input space")))
   (let [delta (:delta tm)
         transs (get delta {:state (get config :state) :symbol (get config :current)})]
     (for [{:keys [direction symbol] :as trans} transs
-          :let [{:keys [state band-left current band-right]} config]] 
+          :let [{:keys [state band-left current band-right]} config]]
       {:state (get trans :state)
        :band-left (case direction
-                    "L" (apply str (butlast band-left)) 
+                    "L" (apply str (butlast band-left))
                     "N" band-left
                     "R" (str band-left symbol))
        :current (case direction
                   "L" (and (last band-left) (str (last band-left)))
-                  "N" (get trans :symbol) 
+                  "N" (get trans :symbol)
                   "R" (and (first band-right) (str (first band-right))))
        :band-right (case direction
                      "L" (apply str symbol band-right)
@@ -83,3 +83,71 @@
        (drop-while #{(first blank)})
        reverse
        (apply str)))
+
+(def tm-parser
+  (insta/parser
+   "<TURING> := DEF (BREAK DEF)*
+    <DEF> := WS (START | FINAL | TRANS | SYMBOLS)? WS
+    TRANS := LBRACK STATE COMMA SYM RBRACK ARROW LBRACK STATE COMMA SYM COMMA HEAD RBRACK
+    SYMBOLS := <'symbols'> (LBRACK SYM COMMA SYM RBRACK)+
+    START := <'start'> WS STATE
+    FINAL := <'final'> (WS STATE)+
+    <HEAD> := 'L' | 'N' | 'R'
+    <SYM> := #'[a-zA-Z0-9_]'
+    <LBRACK> := WS <'('> WS
+    <RBRACK> := WS <')'> WS
+    <ARROW> := WS <'->'> WS
+    <COMMA> := WS <','> WS
+    <STATE> := #'[a-zA-Z0-9_\\-]+'
+    <BREAK> := <'\\n'>
+    <WS> := <#' '>*"))
+
+(defn- trans-from-node [[_ from sym to write direction]]
+  [{:state from :symbol sym} {:state to :symbol write :direction direction}])
+
+(defn build-tm [tree]
+  (loop [[node & remain] tree
+         start nil
+         final []
+         symbols {"_" "_"}
+         deltaacc []]
+    (if (not node)
+      {:start start
+       :final-states (distinct (vec final))
+       :symbols symbols
+       :delta (update-vals (group-by first deltaacc) (partial map second))}
+      (case (first node)
+        :START (recur remain
+                      (last node)
+                      final symbols deltaacc)
+        :FINAL (recur remain start
+                      (concat final (rest node))
+                      symbols deltaacc)
+        :SYMBOLS (recur remain start final
+                        (into symbols (map vec (partition 2 (rest node))))
+                        deltaacc)
+        :TRANS (recur remain start final symbols
+                      (conj deltaacc (trans-from-node node)))))))
+
+(defn validate [{:keys [start final-states symbols]} require-symbols]
+  (assert start "PARSE CRITICIAL: expected a start state")
+  (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
+  (when require-symbols
+    (assert (not-empty symbols)
+            "PARSE CRITICAL: expected at least one symbols declaration")))
+
+(defn file->lba [file]
+  (let [tm (-> file
+               slurp
+               tm-parser
+               build-tm)]
+    (validate tm true)
+    tm))
+
+(defn file->tm [file]
+  (let [tm (-> file
+               slurp
+               tm-parser
+               build-tm)]
+    (validate tm false)
+    tm))

@@ -3,7 +3,6 @@
             [fsms.nfa :as nfa]
             [fsms.pda :as pda]
             [fsms.turing-machine :as tm]
-            [fsms.turing-parser :as tm-parser]
             [fsms.config :as config]
             [fsms.search :refer [build-accept?-fn *debug*]]
             [fsms.cli :as cli]
@@ -73,7 +72,7 @@
                         config)))
 
 (defn validate-tm [file config]
-  (let [tm (tm-parser/file->tm file)
+  (let [tm (tm/file->tm file)
         config (config/load-config config)]
     (validate-automaton (build-accept?-fn tm/initial-configurations
                                           tm/turing-step
@@ -83,7 +82,7 @@
                         config)))
 
 (defn validate-lba [file config]
-  (let [tm (tm-parser/file->lba file)
+  (let [tm (tm/file->lba file)
         config (config/load-config config)]
     ;; TODO: handle exception on invalid configuration
     (validate-automaton (build-accept?-fn tm/initial-lba-configurations
@@ -94,7 +93,7 @@
                         config)))
 
 (defn validate-dtm [file config]
-  (let [tm (tm-parser/file->tm file)
+  (let [tm (tm/file->tm file)
         config (config/load-config config)]
     (tm/assert-deterministic tm)
     (validate-automaton (build-accept?-fn tm/initial-configurations
@@ -105,7 +104,7 @@
                         config)))
 
 (defn validate-calc-dtm [file config]
-  (let [tm (tm-parser/file->tm file)
+  (let [tm (tm/file->tm file)
         config (config/load-config config)]
     (tm/assert-deterministic tm)
     (validate-calculations (build-accept?-fn tm/initial-configurations
