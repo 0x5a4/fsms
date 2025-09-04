@@ -1,5 +1,7 @@
 (ns fsms.pda
-  (:use [fsms.commons]))
+  (:use [fsms.commons]
+        [instaparse.core :as insta])
+  (:require [clojure.string :as s]))
 
 (def MAX-STACKSIZE 30)
 
@@ -7,7 +9,6 @@
   [{:state (get pda :start)
     :input word
     :stack "#"}])
-
 
 (defn trans [config sym next-state]
   (when next-state
@@ -22,11 +23,11 @@
     nil
     (let [sym (str (first (get config :input)))
           consume-sym (get-in pda [:delta {:state (get config :state)
-                                                   :symbol sym
-                                                   :top-of-stack (str (first (get config :stack)))}])
+                                           :symbol sym
+                                           :top-of-stack (str (first (get config :stack)))}])
           lambda-trans (get-in pda [:delta {:state (get config :state)
-                                                    :symbol lambda
-                                                    :top-of-stack (str (first (get config :stack)))}])]
+                                            :symbol lambda
+                                            :top-of-stack (str (first (get config :stack)))}])]
       (concat (map (partial trans config sym) consume-sym)
               (map (partial trans config lambda) lambda-trans)))))
 
@@ -36,3 +37,64 @@
 
 (defn discard-config? [config]
   (< MAX-STACKSIZE (count (get config :stack))))
+
+(def pda-parser
+  (insta/parser
+   "<PDA> := DEF (BREAK DEF)*
+    <DEF> := WS (START | FINAL | TRANS)? WS
+    TRANS := LBRACK STATE COMMA SYM COMMA SYM RBRACK ARROW LBRACK STATE COMMA SYM+ RBRACK
+    START := <'start'> WS STATE
+    FINAL := <'final'> (WS STATE)+
+    <SYM> := #'[a-zA-Z0-9_#]'
+    <LBRACK> := WS <'('> WS
+    <RBRACK> := WS <')'> WS
+    <ARROW> := WS <'->'> WS
+    <COMMA> := WS <','> WS
+    <STATE> := #'[a-zA-Z0-9_\\-]+'
+    <BREAK> := <'\\n'>
+    <WS> := <#' '>*"))
+
+(defn- trans-from-node [[_ from sym pop to push]]
+  [{:state from :symbol sym :top-of-stack pop}
+   {:state to :new-stack (s/replace push lambda "")}])
+
+(defn build-pda [tree]
+  (loop [[node & remain] tree
+         start nil
+         final []
+         deltaacc []]
+    (if (not node)
+      {:start start
+       :final-states (distinct (vec final))
+       :delta (update-vals (group-by first deltaacc) (partial map second))}
+      (case (first node)
+        :START (recur remain
+                      (last node)
+                      final deltaacc)
+        :FINAL (recur remain
+                      start
+                      (concat final (rest node))
+                      deltaacc)
+        :TRANS (recur remain start final
+                      (conj deltaacc (trans-from-node node)))))))
+
+(defn deterministic? [{:keys [delta]}]
+  (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta))
+  (not-any? (fn [[{:keys [state top-of-stack]}]]
+              (contains? delta {:state state :symbol lambda :top-of-stack top-of-stack})) (seq delta)))
+
+(defn validate [{:keys [start final-states delta] :as nfa} deterministic]
+  (assert start "PARSE CRITICIAL: expected a start state")
+  (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
+  (assert (not-any? #(= (:symbol %) lambda) delta)
+          "CRITICAL: transition function has lambda transition(s)")
+  (when deterministic (assert (deterministic? nfa)
+                              "CRITICAL: pda is not deterministic")))
+
+(defn file->pda [file deterministic]
+  (let [pda (-> file
+                slurp
+                pda-parser
+                build-pda)]
+    (validate pda deterministic)
+    pda))

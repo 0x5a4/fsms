@@ -24,7 +24,7 @@
     TRANS := LBRACK STATE COMMA SYM RBRACK ARROW STATE
     START := <'start'> (WS STATE)+
     FINAL := <'final'> (WS STATE)+
-    <SYM> := #'[a-zA-Z0-9_]'
+    <SYM> := #'[a-zA-Z0-9_#]'
     <LBRACK> := WS <'('> WS
     <RBRACK> := WS <')'> WS
     <ARROW> := WS <'->'> WS

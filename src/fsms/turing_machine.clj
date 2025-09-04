@@ -93,7 +93,7 @@
     START := <'start'> WS STATE
     FINAL := <'final'> (WS STATE)+
     <HEAD> := 'L' | 'N' | 'R'
-    <SYM> := #'[a-zA-Z0-9_]'
+    <SYM> := #'[a-zA-Z0-9_#]'
     <LBRACK> := WS <'('> WS
     <RBRACK> := WS <')'> WS
     <ARROW> := WS <'->'> WS
