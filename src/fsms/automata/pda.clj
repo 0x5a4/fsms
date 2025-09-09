@@ -1,4 +1,4 @@
-(ns fsms.pda
+(ns fsms.automata.pda
   (:use [fsms.commons]
         [instaparse.core :as insta])
   (:require [clojure.string :as s]))
@@ -79,9 +79,11 @@
                       (conj deltaacc (trans-from-node node)))))))
 
 (defn deterministic? [{:keys [delta]}]
-  (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta))
-  (not-any? (fn [[{:keys [state top-of-stack]}]]
-              (contains? delta {:state state :symbol lambda :top-of-stack top-of-stack})) (seq delta)))
+  (and
+   (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta))
+   (not-any? (fn [[{:keys [state symbol top-of-stack]}]]
+               (when-not (= symbol lambda)
+                 (contains? delta {:state state :symbol lambda :top-of-stack top-of-stack}))) (seq delta))))
 
 (defn validate [{:keys [start final-states delta] :as nfa} deterministic]
   (assert start "PARSE CRITICIAL: expected a start state")

@@ -1,5 +1,5 @@
 (ns fsms.nfa-test
-  (:use [fsms.nfa]
+  (:use [fsms.automata.nfa]
         [clojure.test]))
 
 (deftest initial-configurations-test

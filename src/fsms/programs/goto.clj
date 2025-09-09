@@ -1,4 +1,4 @@
-(ns programs.goto)
+(ns fsms.programs.goto)
 
 (def MAX-STEPS 10000)
 

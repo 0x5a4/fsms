@@ -1,4 +1,4 @@
-(ns programs.while)
+(ns fsms.programs.while)
 
 (def MAX-STEPS 10000)
 

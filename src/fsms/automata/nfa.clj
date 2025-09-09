@@ -1,4 +1,4 @@
-(ns fsms.nfa
+(ns fsms.automata.nfa
   (:use [fsms.commons])
   (:require [instaparse.core :as insta]))
 

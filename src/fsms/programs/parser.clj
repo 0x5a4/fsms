@@ -1,4 +1,4 @@
-(ns programs.parser
+(ns fsms.programs.parser
   (:require [instaparse.core :as insta]))
 
 (def loop-grammar

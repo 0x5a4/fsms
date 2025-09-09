@@ -1,5 +1,5 @@
 (ns fsms.turing-test
-  (:use [fsms.turing-machine]
+  (:use [fsms.automata.turing-machine]
         [clojure.test]))
 
 (deftest tm-initial-configurations-test

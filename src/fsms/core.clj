@@ -1,16 +1,20 @@
 (ns fsms.core
-  (:require [fsms.nfa :as nfa]
-            [fsms.pda :as pda]
-            [fsms.turing-machine :as tm]
-            [fsms.config :as config]
+  (:require [fsms.automata.nfa :as nfa]
+            [fsms.automata.pda :as pda]
+            [fsms.automata.turing-machine :as tm]
             [fsms.search :refer [build-accept?-fn *debug*]]
             [fsms.cli :as cli]
-            [programs.parser :as prog-parser]
-            [programs.while :as while-progs]
-            [programs.goto :as goto-progs]
+            [fsms.programs.parser :as prog-parser]
+            [fsms.programs.while :as while-progs]
+            [fsms.programs.goto :as goto-progs]
             [instaparse.failure]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.edn :as edn]
+            [clojure.string :as string])
   (:gen-class))
+
+(defn load-config [file]
+  (edn/read-string (slurp file)))
 
 (defn validate-automaton [accept?-fn automaton config]
   (let [err1 (for [word (:accept config)
@@ -33,14 +37,8 @@
 (defn maybe-binnify [input]
   (cond (string? input) input
         (integer? input) (to-bin input)
-        (sequential? input) (clojure.string/join "#" (mapv maybe-binnify input))
+        (sequential? input) (string/join "#" (mapv maybe-binnify input))
         :otherwise (throw (IllegalArgumentException. (str "encountered weird input: " input)))))
-
-; (maybe-binnify 42)
-; (maybe-binnify "101010")
-; (maybe-binnify ["101010" "1010"]) 
-; (maybe-binnify [42 3]) 
-; (maybe-binnify [42]) 
 
 (defn validate-calculations [accept?-fn automaton config result-fn]
   (for [[input output] config
@@ -52,7 +50,7 @@
 
 (defn validate-nfa [deterministic file config]
   (let [nfa (nfa/file->nfa file deterministic)
-        config (config/load-config config)]
+        config (load-config config)]
     (validate-automaton (build-accept?-fn nfa/initial-configurations
                                           nfa/next-states
                                           nfa/accept?
@@ -62,7 +60,7 @@
 
 (defn validate-dpda [file config]
   (let [dpda (pda/file->pda file true)
-        config (config/load-config config)]
+        config (load-config config)]
     (validate-automaton (build-accept?-fn pda/initial-configurations
                                           pda/next-states
                                           pda/dpda-accepting-configuration?
@@ -72,7 +70,7 @@
 
 (defn validate-tm [file config]
   (let [tm (tm/file->tm file)
-        config (config/load-config config)]
+        config (load-config config)]
     (validate-automaton (build-accept?-fn tm/initial-configurations
                                           tm/turing-step
                                           tm/turing-accepting?
@@ -82,7 +80,7 @@
 
 (defn validate-lba [file config]
   (let [tm (tm/file->lba file)
-        config (config/load-config config)]
+        config (load-config config)]
     ;; TODO: handle exception on invalid configuration
     (validate-automaton (build-accept?-fn tm/initial-lba-configurations
                                           tm/lba-step
@@ -93,7 +91,7 @@
 
 (defn validate-dtm [file config]
   (let [tm (tm/file->tm file)
-        config (config/load-config config)]
+        config (load-config config)]
     (tm/assert-deterministic tm)
     (validate-automaton (build-accept?-fn tm/initial-configurations
                                           tm/turing-step
@@ -104,7 +102,7 @@
 
 (defn validate-calc-dtm [file config]
   (let [tm (tm/file->tm file)
-        config (config/load-config config)]
+        config (load-config config)]
     (tm/assert-deterministic tm)
     (validate-calculations (build-accept?-fn tm/initial-configurations
                                              tm/turing-step
@@ -130,8 +128,8 @@
 (defn validate-loop-program [file config]
   (let [program (prog-parser/parse-with file prog-parser/parse-loop-program)]
     (if (instance? instaparse.gll.Failure program)
-      [(clojure.string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
-      (let [config (config/load-config config)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
+      (let [config (load-config config)
             analysis-res (while-progs/analyse program)]
         (if analysis-res
           analysis-res
@@ -140,9 +138,9 @@
 (defn validate-while-program [file config]
   (let [program (prog-parser/parse-with file prog-parser/parse-while-program)]
     (if (instance? instaparse.gll.Failure program)
-      [(clojure.string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
       (let
-       [config (config/load-config config)
+       [config (load-config config)
         analysis-res (while-progs/analyse program)]
         (if analysis-res
           analysis-res
@@ -150,9 +148,9 @@
 
 (defn validate-goto-program [file config]
   (let [program (prog-parser/parse-with file prog-parser/parse-goto-program)
-        config (config/load-config config)]
+        config (load-config config)]
     (if (instance? instaparse.gll.Failure program)
-      [(clojure.string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
       (validate-program program goto-progs/interp config))))
 
 (defn execute-with-output [f args opts]

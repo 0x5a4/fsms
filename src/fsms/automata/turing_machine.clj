@@ -1,4 +1,4 @@
-(ns fsms.turing-machine
+(ns fsms.automata.turing-machine
   (:use [fsms.commons])
   (:require [instaparse.core :as insta]))
 
