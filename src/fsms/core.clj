@@ -180,5 +180,3 @@
         "check-loop-program" (execute-with-output validate-loop-program args options)
         "check-while-program" (execute-with-output validate-while-program args options)
         "check-goto-program" (execute-with-output validate-goto-program args options)))))
-
-

@@ -78,20 +78,25 @@
         :TRANS (recur remain start final
                       (conj deltaacc (trans-from-node node)))))))
 
-(defn deterministic? [{:keys [delta]}]
-  (and
-   (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta))
-   (not-any? (fn [[{:keys [state symbol top-of-stack]}]]
-               (when-not (= symbol lambda)
-                 (contains? delta {:state state :symbol lambda :top-of-stack top-of-stack}))) (seq delta))))
+(defn validate-deterministic [{:keys [delta]}]
+  (assert (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta)) "CRITICAL: not deterministic, multiple transitions have the same right hand side")
+  (doseq [[{:keys [state symbol top-of-stack]}] delta]
+    (assert (if (= symbol lambda)
+              (contains? delta {:state state :symbol lambda :top-of-stack top-of-stack})
+              true)
+            (format "CRITICAL: not deterministc, both right hand sides (%s, %s, %s) and (%s, _, %s) are defined"
+                    state
+                    symbol
+                    top-of-stack
+                    state
+                    top-of-stack))))
 
 (defn validate [{:keys [start final-states delta] :as nfa} deterministic]
   (assert start "PARSE CRITICIAL: expected a start state")
   (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
   (assert (not-any? #(= (:symbol %) lambda) delta)
           "CRITICAL: transition function has lambda transition(s)")
-  (when deterministic (assert (deterministic? nfa)
-                              "CRITICAL: pda is not deterministic")))
+  (when deterministic (validate-deterministic nfa)))
 
 (defn file->pda [file deterministic]
   (let [pda (-> file

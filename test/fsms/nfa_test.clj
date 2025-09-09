@@ -96,7 +96,7 @@
 
 (deftest nfa-validate-deterministic
   (testing "deterministic nfas get recognized as such"
-    (are [nfa] (deterministic? nfa)
+    (are [nfa] (nil? (validate-deterministic nfa))
       {:start ["z1"]
        :delta {{:state "z0" :symbol "a"} ["z1"]
                {:state "z0" :symbol "b"} ["z2"]}}
@@ -106,7 +106,7 @@
                {:state "z1" :symbol "a"} ["z2"]}}))
 
   (testing "non-deterministic nfas get recognized as such"
-    (are [nfa] (not (deterministic? nfa))
+    (are [nfa] (thrown? AssertionError (validate-deterministic nfa))
       {:start ["z1" "z2"]
        :delta {{:state "z0" :symbol "a" :to "z1"} ["z1" "z2"]}}
 

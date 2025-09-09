@@ -56,18 +56,17 @@
         :TRANS (recur remain start final
                       (conj deltaacc (trans-from-node node)))))))
 
-(defn deterministic? [{:keys [delta start]}]
-  (and
-   (<= 0 (count start) 1)
-   (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta))))
+(defn validate-deterministic [{:keys [delta start]}]
+  (assert (<= 0 (count start) 1) "CRITICAL: not deterministic, has multiple start states")
+  (assert (not-any? (fn [[_ tos]] (not= 1 (count tos))) (seq delta))
+          "CRITICAL: not deterministic, multiple transitions have the same right hand side"))
 
 (defn validate [{:keys [start final-states delta] :as nfa} deterministic]
-  (assert (not-empty start) "PARSE CRITICIAL: expected at least one start state")
-  (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
+  (assert (not-empty start) "CRITICIAL: expected at least one start state")
+  (assert (not-empty final-states) "CRITICIAL: expected at least one final state")
   (assert (not-any? #(= (:symbol %) lambda) delta)
           "CRITICAL: transition function has lambda transition(s)")
-  (when deterministic (assert (deterministic? nfa)
-                              "CRITICAL: nfa is not deterministic")))
+  (when deterministic (validate-deterministic nfa)))
 
 (defn file->nfa [file deterministic]
   (let [nfa (-> file

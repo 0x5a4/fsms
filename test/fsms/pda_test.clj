@@ -135,15 +135,15 @@
 
 (deftest pda-validate-deterministic
   (testing "deterministic pdas get recognized as such"
-    (are [pda] (deterministic? pda)
+    (are [pda] (nil? (validate-deterministic pda))
       {:delta {{:state "z0" :symbol "0" :top-of-stack "#"} [{:state "z0" :new-stack "A#"}]
                {:state "z0" :symbol "_" :top-of-stack "A"} [{:state "z0" :new-stack "AA"}]
                {:state "z0" :symbol "1" :top-of-stack "#"} [{:state "z1" :new-stack "#"}]
                {:state "z1" :symbol "1" :top-of-stack "#"} [{:state "z1" :new-stack "#"}]}}))
 
   (testing "non-deterministic pdas get recognized as such"
-    (are [pda] (not (deterministic? pda))
+    (are [pda] (thrown? AssertionError (validate-deterministic pda))
       {:delta {{:state "z0" :symbol "a" :top-of-stack "A"} [{:state "z0" :new-stack "A"} {:state "z1" :new-stack "B"}]}}
-      
+
       {:delta {{:state "z0" :symbol "_" :top-of-stack "A"} []
                {:state "z0" :symbol "a" :top-of-stack "A"} []}})))
