@@ -80,6 +80,12 @@
       "final z0"
       [[:FINAL "z0"]]
 
+      ;; comments
+      "; aaaaa   7 6 a    
+       ;
+       start z0      ; aaaaaaaa"
+      [[:START "z0"]]
+
       ;; multiple final states
       "final z0 z1"
       [[:FINAL "z0" "z1"]]

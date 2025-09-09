@@ -87,7 +87,8 @@
 (def tm-parser
   (insta/parser
    "<TURING> := DEF (BREAK DEF)*
-    <DEF> := WS (START | FINAL | TRANS | SYMBOLS)? WS
+    <DEF> := WS (START | FINAL | TRANS | SYMBOLS)? WS COMMENT?
+    <COMMENT> := <';'> <#'[^\\n]*'>
     TRANS := LBRACK STATE COMMA SYM RBRACK ARROW LBRACK STATE COMMA SYM COMMA HEAD RBRACK
     SYMBOLS := <'symbols'> (LBRACK SYM COMMA SYM RBRACK)+
     START := <'start'> WS STATE

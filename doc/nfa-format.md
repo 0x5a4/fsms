@@ -1,9 +1,8 @@
 # NFA file format
 
-A NFA file is processed line-by-line. The ordering of the lines does not matter.
+A NFA file is processed line-by-line. The ordering of the lines does not matter. Anything after a `;` is regarded as a comment until the end of the line.
 A line can be (in any order):
 
-- A comment (starting with `;`).
 - The word `start` followed by a whitespace character, followed by at least one state identifier.
   Example: `start z1`, `start z1 z2`.
 - The word `final` followed by a whitespace character, followed by at least one state identifier.

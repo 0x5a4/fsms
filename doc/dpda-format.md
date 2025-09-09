@@ -1,6 +1,6 @@
 # DPDA file format
 
-A DPDA file is processed line-by-line. The ordering of the lines does not matter.
+A DPDA file is processed line-by-line. The ordering of the lines does not matter. Anything after a `;` is regarded as a comment until the end of the line.
 A line can be (in any order):
 
 - A comment (starting with `;`).

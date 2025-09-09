@@ -91,6 +91,12 @@
       "final z0"
       [[:FINAL "z0"]]
 
+      ;; comments
+      "; aaaaa   7 6 a    
+       ;
+       start z0      ; aaaaaaaa"
+      [[:START "z0"]]
+
       ;; transition
       "(z0, a) -> (z2, a, L)"
       [[:TRANS "z0" "a" "z2" "a" "L"]]

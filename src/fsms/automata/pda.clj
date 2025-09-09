@@ -41,7 +41,8 @@
 (def pda-parser
   (insta/parser
    "<PDA> := DEF (BREAK DEF)*
-    <DEF> := WS (START | FINAL | TRANS)? WS
+    <DEF> := WS (START | FINAL | TRANS)? WS COMMENT?
+    <COMMENT> := <';'> <#'[^\\n]*'>
     TRANS := LBRACK STATE COMMA SYM COMMA SYM RBRACK ARROW LBRACK STATE COMMA SYM+ RBRACK
     START := <'start'> WS STATE
     FINAL := <'final'> (WS STATE)+
