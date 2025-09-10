@@ -46,12 +46,12 @@
     TRANS := LBRACK STATE COMMA SYM COMMA SYM RBRACK ARROW LBRACK STATE COMMA SYM+ RBRACK
     START := <'start'> WS STATE
     FINAL := <'final'> (WS STATE)+
-    <SYM> := #'[a-zA-Z0-9_#]'
+    <SYM> := #'[^\\s,()]'
     <LBRACK> := WS <'('> WS
     <RBRACK> := WS <')'> WS
     <ARROW> := WS <'->'> WS
     <COMMA> := WS <','> WS
-    <STATE> := #'[a-zA-Z0-9_\\-]+'
+    <STATE> := #'[^\\s,()]+'
     <BREAK> := <'\\n'>
     <WS> := <#' '>*"))
 
