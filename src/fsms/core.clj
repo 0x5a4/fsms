@@ -2,11 +2,12 @@
   (:require [fsms.automata.nfa :as nfa]
             [fsms.automata.pda :as pda]
             [fsms.automata.turing-machine :as tm]
-            [fsms.search :refer [build-accept?-fn *debug*]]
-            [fsms.cli :as cli]
+            [fsms.automata.search :refer [build-accept?-fn *debug*]]
             [fsms.programs.parser :as prog-parser]
             [fsms.programs.while :as while-progs]
             [fsms.programs.goto :as goto-progs]
+            [fsms.regex :as regex]
+            [fsms.cli :as cli]
             [instaparse.failure]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
@@ -16,14 +17,18 @@
 (defn load-config [file]
   (edn/read-string (slurp file)))
 
-(defn validate-automaton [accept?-fn automaton config]
+(defn validate-automaton [accept?-fn context config]
   (let [err1 (for [word (:accept config)
-                   :when (not (accept?-fn automaton word))]
+                   :when (not (accept?-fn context word))]
                (str "Word '" word "' should have been accepted, but was rejected"))
         err2 (for [word (:reject config)
-                   :when (accept?-fn automaton word)]
+                   :when (accept?-fn context word)]
                (str "Word '" word "' should have been rejected, but was accepted"))]
     (concat err1 err2)))
+
+(defn validate-regex [file config]
+  (let [regex (regex/file->regex file)]
+    (validate-automaton regex/accept? regex config)))
 
 (defn to-bin [n]
   (if (zero? n)
@@ -170,6 +175,7 @@
     (if exit-message
       (cli/exit (if ok? 0 1) exit-message)
       (case action
+        "check-regex" (execute-with-output validate-regex args options)
         "check-nfa" (execute-with-output (partial validate-nfa false) args options)
         "check-dfa" (execute-with-output (partial validate-nfa true) args options)
         "check-dpda" (execute-with-output validate-dpda args options)

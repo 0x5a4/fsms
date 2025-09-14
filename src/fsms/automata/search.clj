@@ -1,4 +1,4 @@
-(ns fsms.search)
+(ns fsms.automata.search)
 
 (def MAX-STATES 1000)
 

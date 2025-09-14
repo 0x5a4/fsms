@@ -6,6 +6,9 @@
   "java -jar mytool.jar COMMAND [ARGS*]
 
 Valid options for COMMAND are:
+  check-regex <regex-file> <config-file>
+   | Check a regex against a number of accepted
+   | and rejected words.
   check-nfa <nfa-file> <config-file>
    | Check an implementation of a NFA against
    | a number of accepted and rejected words.
@@ -54,7 +57,7 @@ Valid options for COMMAND are:
       errors ; errors => exit with description of errors
       {:exit-message (clojure.string/join errors)}
       ;; custom validation on arguments
-      (and (contains? #{"check-dfa" "check-nfa" "check-dpda" "check-tm" "check-dtm" "check-lba"
+      (and (contains? #{"check-regex" "check-dfa" "check-nfa" "check-dpda" "check-tm" "check-dtm" "check-lba"
                         "check-calc-dtm"
                         "check-loop-program" "check-while-program" "check-goto-program"}
                       (first arguments))
