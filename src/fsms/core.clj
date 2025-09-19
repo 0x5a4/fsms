@@ -45,7 +45,7 @@
   (cond (string? input) input
         (integer? input) (to-bin input)
         (sequential? input) (string/join "#" (mapv maybe-binnify input))
-        :otherwise (throw (IllegalArgumentException. (str "encountered weird input: " input)))))
+        :else (throw (IllegalArgumentException. (str "encountered weird input: " input)))))
 
 (defn validate-calculations [accept?-fn automaton config result-fn]
   (for [[input output] config
@@ -56,68 +56,81 @@
     (str "Input " input " should yield '" output "' but was '" res "' instead.")))
 
 (defn validate-nfa [deterministic file config]
-  (let [nfa (nfa/file->nfa file deterministic)
+  (let [parsed (-> file slurp nfa/nfa-parser)
         config (load-config config)]
-    (validate-automaton (build-accept?-fn nfa/initial-configurations
-                                          nfa/next-states
-                                          nfa/accept?
-                                          nfa/discard?)
-                        nfa
-                        config)))
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (validate-automaton (build-accept?-fn nfa/initial-configurations
+                                            nfa/next-states
+                                            nfa/accept?
+                                            nfa/discard?)
+                          (nfa/validate (nfa/build-nfa parsed) deterministic)
+                          config))))
 
 (defn validate-dpda [file config]
-  (let [dpda (pda/file->pda file true)
+  (let [parsed (-> file slurp pda/pda-parser)
         config (load-config config)]
-    (validate-automaton (build-accept?-fn pda/initial-configurations
-                                          pda/next-states
-                                          pda/dpda-accepting-configuration?
-                                          pda/discard-config?)
-                        dpda
-                        config)))
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (validate-automaton (build-accept?-fn pda/initial-configurations
+                                            pda/next-states
+                                            pda/dpda-accepting-configuration?
+                                            pda/discard-config?)
+                          (pda/validate (pda/build-pda parsed) true)
+                          config))))
 
 (defn validate-tm [file config]
-  (let [tm (tm/file->tm file)
+  (let [parsed (-> file slurp tm/tm-parser)
         config (load-config config)]
-    (validate-automaton (build-accept?-fn tm/initial-configurations
-                                          tm/turing-step
-                                          tm/turing-accepting?
-                                          tm/turing-discard?)
-                        tm
-                        config)))
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (validate-automaton (build-accept?-fn tm/initial-configurations
+                                            tm/turing-step
+                                            tm/turing-accepting?
+                                            tm/turing-discard?)
+                          (tm/validate (tm/build-tm parsed) false)
+                          config))))
 
 (defn validate-lba [file config]
-  (let [tm (tm/file->lba file)
+  (let [parsed (-> file slurp tm/tm-parser)
         config (load-config config)]
-    ;; TODO: handle exception on invalid configuration
-    (validate-automaton (build-accept?-fn tm/initial-lba-configurations
-                                          tm/lba-step
-                                          tm/turing-accepting?
-                                          tm/turing-discard?)
-                        tm
-                        config)))
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (validate-automaton (build-accept?-fn tm/initial-lba-configurations
+                                            tm/lba-step
+                                            tm/turing-accepting?
+                                            tm/turing-discard?)
+                          (tm/validate (tm/build-tm parsed) true)
+                          config))))
 
 (defn validate-dtm [file config]
-  (let [tm (tm/file->tm file)
+  (let [parsed (-> file slurp tm/tm-parser)
         config (load-config config)]
-    (tm/assert-deterministic tm)
-    (validate-automaton (build-accept?-fn tm/initial-configurations
-                                          tm/turing-step
-                                          tm/turing-accepting?
-                                          tm/turing-discard?)
-                        tm
-                        config)))
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (let [tm (tm/build-tm parsed)]
+        (tm/assert-deterministic tm)
+        (validate-automaton (build-accept?-fn tm/initial-lba-configurations
+                                              tm/lba-step
+                                              tm/turing-accepting?
+                                              tm/turing-discard?)
+                            (tm/validate tm true)
+                            config)))))
 
 (defn validate-calc-dtm [file config]
-  (let [tm (tm/file->tm file)
+  (let [parsed (-> file slurp tm/tm-parser)
         config (load-config config)]
-    (tm/assert-deterministic tm)
-    (validate-calculations (build-accept?-fn tm/initial-configurations
-                                             tm/turing-step
-                                             tm/turing-accepting?
-                                             tm/turing-discard?)
-                           tm
-                           config
-                           tm/result-from-configuration)))
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (let [tm (tm/build-tm parsed)]
+        (tm/assert-deterministic tm)
+        (validate-calculations (build-accept?-fn tm/initial-lba-configurations
+                                              tm/lba-step
+                                              tm/turing-accepting?
+                                              tm/turing-discard?)
+                            (tm/validate tm true)
+                            config
+                            tm/result-from-configuration)))))
 
 (defn build-initial-environment [input]
   (cond (integer? input) {"x1" input}

@@ -92,17 +92,10 @@
                     state
                     top-of-stack))))
 
-(defn validate [{:keys [start final-states delta] :as nfa} deterministic]
+(defn validate [{:keys [start final-states delta] :as pda} deterministic]
   (assert start "PARSE CRITICIAL: expected a start state")
   (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
   (assert (not-any? #(= (:symbol %) lambda) delta)
           "CRITICAL: transition function has lambda transition(s)")
-  (when deterministic (validate-deterministic nfa)))
-
-(defn file->pda [file deterministic]
-  (let [pda (-> file
-                slurp
-                pda-parser
-                build-pda)]
-    (validate pda deterministic)
-    pda))
+  (when deterministic (validate-deterministic pda))
+  pda)

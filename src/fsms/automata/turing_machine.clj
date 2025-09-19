@@ -130,25 +130,10 @@
         :TRANS (recur remain start final symbols
                       (conj deltaacc (trans-from-node node)))))))
 
-(defn validate [{:keys [start final-states symbols]} require-symbols]
+(defn validate [{:keys [start final-states symbols] :as tm} require-symbols]
   (assert start "PARSE CRITICIAL: expected a start state")
   (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
   (when require-symbols
     (assert (not-empty symbols)
-            "PARSE CRITICAL: expected at least one symbols declaration")))
-
-(defn file->lba [file]
-  (let [tm (-> file
-               slurp
-               tm-parser
-               build-tm)]
-    (validate tm true)
-    tm))
-
-(defn file->tm [file]
-  (let [tm (-> file
-               slurp
-               tm-parser
-               build-tm)]
-    (validate tm false)
-    tm))
+            "PARSE CRITICAL: expected at least one symbols declaration"))
+  tm)

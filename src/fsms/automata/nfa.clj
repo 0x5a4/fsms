@@ -67,12 +67,5 @@
   (assert (not-empty final-states) "CRITICIAL: expected at least one final state")
   (assert (not-any? #(= (:symbol %) lambda) delta)
           "CRITICAL: transition function has lambda transition(s)")
-  (when deterministic (validate-deterministic nfa)))
-
-(defn file->nfa [file deterministic]
-  (let [nfa (-> file
-                slurp
-                nfa-parser
-                build-nfa)]
-    (validate nfa deterministic)
-    nfa))
+  (when deterministic (validate-deterministic nfa))
+  nfa)
