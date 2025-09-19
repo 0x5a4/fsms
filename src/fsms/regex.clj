@@ -2,45 +2,66 @@
   (:use [fsms.commons])
   (:require [instaparse.core :as insta]))
 
+(defn- emptyset? [node]
+  (= :EMPTYSET (first node)))
+
 (def regex-parser
   (insta/parser
-   "<REGEX> := WS (CONCAT | OR | KLEENE | LAMBDA | SYM) WS
+   "<REGEX> := WS (CONCAT | OR | KLEENE | LAMBDA | EMPTYSET | SYM) WS
     CONCAT := REGEX REGEX
     OR := <'('> REGEX  <'+'> REGEX <')'>
     KLEENE := <'('> REGEX <')*'>
     LAMBDA := <'_'>
-    SYM := #'[^_/()+* ]'
+    EMPTYSET := <'{}'>
+    SYM := #'[^_/()+* {}]'
     <WS> := <#' '>*
     "))
 
-(defn- transform-sym [c]
+(defn- sym-to-jregex [c]
   (str c))
 
-(def transform-lambda (constantly ""))
+(def ^:private lambda-to-jregex (constantly ""))
 
-(defn- transform-kleene [inner]
+(defn- kleene-to-jregex [inner]
   (str "(" inner ")*"))
 
-(defn- transform-or [lhs rhs]
+(defn- or-to-jregex [lhs rhs]
   (str "(" lhs "|" rhs ")"))
 
-(defn- transform-concat [lhs rhs]
+(defn- concat-to-jregex [lhs rhs]
   (str lhs rhs))
 
-(defn build-regex [regex-string]
-  (->>
-   regex-string
-   regex-parser
-   (insta/transform {:CONCAT transform-concat
-                     :OR transform-or
-                     :KLEENE transform-kleene
-                     :LAMBDA transform-lambda
-                     :SYM transform-sym})
-   first
-   re-pattern))
+(defn- resolve-emptyset-lhs-rhs [node lhs rhs]
+  (cond
+    (and (emptyset? lhs) (emptyset? rhs)) [:EMPTYSET]
+    (emptyset? lhs) rhs
+    (emptyset? rhs) lhs
+    :else [node lhs rhs]))
 
-(defn file->regex [file]
-  (-> file slurp build-regex))
+(defn- resolve-emptyset-kleene [inner]
+  (if (emptyset? inner)
+    [:LAMBDA]
+    [:KLEENE inner]))
+
+(def fold-emptyset {:CONCAT (partial resolve-emptyset-lhs-rhs :CONCAT)
+                    :OR (partial resolve-emptyset-lhs-rhs :OR)
+                    :KLEENE resolve-emptyset-kleene})
+
+(def to-jregex {:CONCAT concat-to-jregex
+                :OR or-to-jregex
+                :KLEENE kleene-to-jregex
+                :LAMBDA lambda-to-jregex
+                :SYM sym-to-jregex})
+
+(defn build-regex [parsed]
+  (let [maybe-emptyset (insta/transform fold-emptyset parsed)]
+    (if (-> maybe-emptyset first emptyset?)
+      :EMPTYSET
+      (->> maybe-emptyset
+           (insta/transform to-jregex)
+           first
+           re-pattern))))
 
 (defn accept? [regex word]
-  (some? (re-matches regex word)))
+  (when (not= regex :EMPTYSET)
+    (some? (re-matches regex word))))

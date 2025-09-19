@@ -27,8 +27,10 @@
     (concat err1 err2)))
 
 (defn validate-regex [file config]
-  (let [regex (regex/file->regex file)]
-    (validate-automaton regex/accept? regex config)))
+  (let [parsed (-> file slurp regex/regex-parser)]
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (validate-automaton regex/accept? (regex/build-regex parsed) config))))
 
 (defn to-bin [n]
   (if (zero? n)
