@@ -99,7 +99,7 @@
     <RBRACK> := WS <')'> WS
     <ARROW> := WS <'->'> WS
     <COMMA> := WS <','> WS
-    <STATE> := #'[^\\s,()]+'
+    <STATE> := #'[a-zA-Z_0-9]+'
     <BREAK> := <'\\n'>
     <WS> := <#' '>*"))
 
