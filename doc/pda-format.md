@@ -9,7 +9,7 @@ final z_42 z_e
 ; Kommentar, diese Zeile wird ignoriert
 (z_0, a, A) -> (z_0, A)
 (z_0, b, B) -> (z_0, AAAA)
-(z_1, _, B) -> (z_e, _)
+(z_1, _, B) -> (z_e, _) ;Auch ein Kommentar
 ```
 
 Ihre Datei wird zeilenweise verarbeitet. Die Reihenfolge ist egal.
@@ -26,6 +26,7 @@ Valide Zeilen beginnen mit:
   Klammern und Kommata sind wichtig, Whitespaces dürfen dazwischen nach Belieben eingefügt werden.
 
 Weitere Anmerkungen:
+- Alles nach einem `;` wird bis zum Zeilenende ignoriert
 - Das Symbol für das Blank-Symbol lautet `_`. Dieses Symbol wird auch verwendet um "Nichts" in den Keller zu legen
 - Zustands-Identifier bestehen aus mindestens einem Word-Character (die Zeichen in der Range `[a-zA-Z_0-9]`, also a, ..., z, A, .., Z, \_, 0, ..., 9).
   Beispiele für gültige Zustände wären also: `A`, `z0`, `z_42` aber nicht `z-0`

@@ -9,7 +9,7 @@ final z_42 z_e
 ; Kommentar, diese Zeile wird ignoriert
 (z_0, a) -> (z_0, _, R)
 (z_0, _) -> (z_0, a, N)
-(z_1, b) -> (z_3, $, L)
+(z_1, b) -> (z_3, $, L) ;Auch ein Kommentar
 ```
 
 Ihre Datei wird zeilenweise verarbeitet. Die Reihenfolge ist egal.
@@ -19,7 +19,6 @@ Valide Zeilen beginnen mit:
    Es muss genau eine solche Definition geben. (Falls es mehrere gibt, "gewinnt" die letzte)
 - `final` gefolgt von mindestens einem Leerzeichen und mindestens einem Zustands-Identifier (z.B. `final z1 z2 z3`).
    Es muss mindestens eine solche Definition geben, weitere Definitionen werden kombiniert.
-- Zeilen, die mit `;` beginnen, werden ignoriert.
 - `(` für Definitionen der Überführungsfunktion in der Form von
   `(Zustand, Symbol) -> (Zustand, neues-Symbol, Richtung)`,
   z.B. `(z0, a) -> (z1, b, L)`.
@@ -27,6 +26,7 @@ Valide Zeilen beginnen mit:
   Klammern und Kommata sind wichtig, Whitespaces dürfen dazwischen nach Belieben eingefügt werden.
 
 Weitere Anmerkungen:
+- Alles nach einem `;` wird bis zum Zeilenende ignoriert
 - Das Symbol für das Blank-Symbol lautet `_`.
 - Zustands-Identifier bestehen aus mindestens einem Word-Character (die Zeichen in der Range `[a-zA-Z_0-9]`, also a, ..., z, A, .., Z, \_, 0, ..., 9).
   Beispiele für gültige Zustände wären also: `A`, `z0`, `z_42` aber nicht `z-0`
@@ -43,7 +43,7 @@ symbols (0, a) (1, b)
 
 ; Kommentar, diese Zeile wird ignoriert
 (z_0, a) -> (z_0, _, R)
-(z_0, _) -> (z_0, a, N)
+(z_0, _) -> (z_0, a, N) ;Auch ein Kommentar
 (z_1, b) -> (z_3, $, L)
 ```
 
