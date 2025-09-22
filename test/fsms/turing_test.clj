@@ -76,9 +76,9 @@
 (deftest turing-accept-test
   (testing "TM configurations are accepted or rejected accordingly"
     ;; i am valid
-    (is true? (turing-accepting? {:final-states ["z1" "z2"]} {:state "z1"}))
+    (is true? (turing-accepting? {:final-states #{"z1" "z2"}} {:state "z1"}))
     ;; i am not
-    (is false? (turing-accepting? {:final-states ["z1" "z2"]} {:state "z3"}))))
+    (is false? (turing-accepting? {:final-states #{"z1" "z2"}} {:state "z3"}))))
 
 (deftest turing-parse-test
   (testing "TM gets parsed correctly"
@@ -116,21 +116,21 @@
     (are [program nfa] (= nfa (build-tm (tm-parser program)))
       ;; start state
       "start z0"
-      {:start "z0" :final-states [] :symbols {"_" "_"} :delta {}}
+      {:start "z0" :final-states #{} :symbols {"_" "_"} :delta {}}
 
       ;; final state
       "final z0"
-      {:start nil :final-states ["z0"] :symbols {"_" "_"} :delta {}}
+      {:start nil :final-states #{"z0"} :symbols {"_" "_"} :delta {}}
 
       ;; single transition
       "(z0, a) -> (z2, a, L)"
-      {:start nil :final-states [] :symbols {"_" "_"} :delta {{:state "z0" :symbol "a"} [{:state "z2" :symbol "a" :direction "L"}]}}
+      {:start nil :final-states #{} :symbols {"_" "_"} :delta {{:state "z0" :symbol "a"} [{:state "z2" :symbol "a" :direction "L"}]}}
 
       ;; non-deterministic transitions
       "(z0, a) -> (z2, a, L)
        (z0, a) -> (z5, a, R)"
       {:start nil
-       :final-states []
+       :final-states #{}
        :symbols {"_" "_"}
        :delta {{:state "z0" :symbol "a"} [{:state "z2" :symbol "a" :direction "L"}
                                           {:state "z5" :symbol "a" :direction "R"}]}}
@@ -141,7 +141,7 @@
        (z0, a) -> (z5, a, R)
        (z1, b) -> (z2, B, N)"
       {:start "z0"
-       :final-states ["z1"]
+       :final-states #{"z1"}
        :symbols {"_" "_"}
        :delta {{:state "z0" :symbol "a"} [{:state "z2" :symbol "a" :direction "L"}
                                           {:state "z5" :symbol "a" :direction "R"}]

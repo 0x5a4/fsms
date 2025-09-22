@@ -109,12 +109,12 @@
 (defn build-tm [tree]
   (loop [[node & remain] tree
          start nil
-         final []
+         final #{}
          symbols {"_" "_"}
          deltaacc []]
     (if (not node)
       {:start start
-       :final-states (distinct (vec final))
+       :final-states (set final)
        :symbols symbols
        :delta (update-vals (group-by first deltaacc) (partial map second))}
       (case (first node)

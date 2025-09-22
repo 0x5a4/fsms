@@ -75,20 +75,20 @@
     (are [program nfa] (= nfa (build-nfa (nfa-parser program)))
       ;; start state
       "start z0"
-      {:start ["z0"] :final-states [] :delta {}}
+      {:start ["z0"] :final-states #{} :delta {}}
 
       ;; final state
       "final z0"
-      {:start [] :final-states ["z0"] :delta {}}
+      {:start [] :final-states #{"z0"} :delta {}}
 
       ;; single transition
       "(z0, a) -> z2"
-      {:start [] :final-states [] :delta {{:state "z0" :symbol "a"} ["z2"]}}
+      {:start [] :final-states #{} :delta {{:state "z0" :symbol "a"} ["z2"]}}
 
       ;; non-deterministic transitions
       "(z0, a) -> z2
        (z0, a) -> z5"
-      {:start [] :final-states [] :delta {{:state "z0" :symbol "a"} ["z2" "z5"]}}
+      {:start [] :final-states #{} :delta {{:state "z0" :symbol "a"} ["z2" "z5"]}}
 
       ;; complete example
       "start z0
@@ -96,7 +96,7 @@
        (z0, a) -> z1
        (z1, a) -> z1"
       {:start ["z0"]
-       :final-states ["z1"]
+       :final-states #{"z1"}
        :delta {{:state "z0" :symbol "a"} ["z1"]
                {:state "z1" :symbol "a"} ["z1"]}})))
 

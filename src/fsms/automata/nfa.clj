@@ -40,11 +40,11 @@
 (defn build-nfa [tree]
   (loop [[node & remain] tree
          start []
-         final []
+         final #{}
          deltaacc []]
     (if (not node)
       {:start (vec start)
-       :final-states (distinct (vec final))
+       :final-states (set final)
        :delta (update-vals (group-by first deltaacc) (partial map second))}
       (case (first node)
         :START (recur remain
