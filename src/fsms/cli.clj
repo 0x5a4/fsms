@@ -15,6 +15,9 @@ Valid options for COMMAND are:
   check-dfa <dfa-file> <config-file>
    | Like check-nfa, but input automata
    | must be deterministic
+  check-pda <dpda-file> <config-file>
+   | Check an implementation of a PDA against
+   | a number of accepted and rejected words.
   check-dpda <dpda-file> <config-file>
    | Check an implementation of a DPDA against
    | a number of accepted and rejected words.
@@ -57,7 +60,11 @@ Valid options for COMMAND are:
       errors ; errors => exit with description of errors
       {:exit-message (clojure.string/join errors)}
       ;; custom validation on arguments
-      (and (contains? #{"check-regex" "check-dfa" "check-nfa" "check-dpda" "check-tm" "check-dtm" "check-lba"
+      (and (contains? #{"check-regex" 
+                        "check-dfa" "check-nfa" 
+                        "check-pda" "check-dpda"
+                        "check-tm" "check-dtm"
+                        "check-lba"
                         "check-calc-dtm"
                         "check-loop-program" "check-while-program" "check-goto-program"}
                       (first arguments))

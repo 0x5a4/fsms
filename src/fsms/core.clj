@@ -67,6 +67,18 @@
                           (nfa/validate (nfa/build-nfa parsed) deterministic)
                           config))))
 
+(defn validate-pda [file config]
+  (let [parsed (-> file slurp pda/pda-parser)
+        config (load-config config)]
+    (if (instance? instaparse.gll.Failure parsed)
+      [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
+      (validate-automaton (build-accept?-fn pda/initial-configurations
+                                            pda/next-states
+                                            pda/pda-accepting?
+                                            pda/discard-config?)
+                          (pda/validate (pda/build-pda parsed) false)
+                          config))))
+
 (defn validate-dpda [file config]
   (let [parsed (-> file slurp pda/pda-parser)
         config (load-config config)]
@@ -74,7 +86,7 @@
       [(string/replace (with-out-str (instaparse.failure/pprint-failure parsed)) "\n" "\n; ")]
       (validate-automaton (build-accept?-fn pda/initial-configurations
                                             pda/next-states
-                                            pda/dpda-accepting-configuration?
+                                            pda/dpda-accepting?
                                             pda/discard-config?)
                           (pda/validate (pda/build-pda parsed) true)
                           config))))
@@ -125,12 +137,12 @@
       (let [tm (tm/build-tm parsed)]
         (tm/assert-deterministic tm)
         (validate-calculations (build-accept?-fn tm/initial-lba-configurations
-                                              tm/lba-step
-                                              tm/turing-accepting?
-                                              tm/turing-discard?)
-                            (tm/validate tm true)
-                            config
-                            tm/result-from-configuration)))))
+                                                 tm/lba-step
+                                                 tm/turing-accepting?
+                                                 tm/turing-discard?)
+                               (tm/validate tm true)
+                               config
+                               tm/result-from-configuration)))))
 
 (defn build-initial-environment [input]
   (cond (integer? input) {"x1" input}
@@ -190,14 +202,15 @@
     (if exit-message
       (cli/exit (if ok? 0 1) exit-message)
       (case action
-        "check-regex" (execute-with-output validate-regex args options)
-        "check-nfa" (execute-with-output (partial validate-nfa false) args options)
-        "check-dfa" (execute-with-output (partial validate-nfa true) args options)
-        "check-dpda" (execute-with-output validate-dpda args options)
-        "check-tm"   (execute-with-output validate-tm args options)
-        "check-dtm"  (execute-with-output validate-dtm args options)
-        "check-lba"  (execute-with-output validate-lba args options)
-        "check-calc-dtm" (execute-with-output validate-calc-dtm args options)
-        "check-loop-program" (execute-with-output validate-loop-program args options)
+        "check-regex"         (execute-with-output validate-regex args options)
+        "check-nfa"           (execute-with-output (partial validate-nfa false) args options)
+        "check-dfa"           (execute-with-output (partial validate-nfa true) args options)
+        "check-pda"           (execute-with-output validate-pda args options)
+        "check-dpda"          (execute-with-output validate-dpda args options)
+        "check-tm"            (execute-with-output validate-tm args options)
+        "check-dtm"           (execute-with-output validate-dtm args options)
+        "check-lba"           (execute-with-output validate-lba args options)
+        "check-calc-dtm"      (execute-with-output validate-calc-dtm args options)
+        "check-loop-program"  (execute-with-output validate-loop-program args options)
         "check-while-program" (execute-with-output validate-while-program args options)
-        "check-goto-program" (execute-with-output validate-goto-program args options)))))
+        "check-goto-program"  (execute-with-output validate-goto-program args options)))))

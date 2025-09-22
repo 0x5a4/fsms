@@ -31,7 +31,11 @@
       (concat (map (partial trans config sym) consume-sym)
               (map (partial trans config lambda) lambda-trans)))))
 
-(defn dpda-accepting-configuration? [dpda config]
+(defn pda-accepting? [_ config]
+  (and (empty? (:input config))
+       (empty? (:stack config ))))
+
+(defn dpda-accepting? [dpda config]
   (and (empty? (:input config))
        (contains? (get dpda :final-states) (get config :state))))
 
@@ -55,9 +59,9 @@
     <BREAK> := <'\\n'>
     <WS> := <#' '>*"))
 
-(defn- trans-from-node [[_ from sym pop to push]]
+(defn- trans-from-node [[_ from sym pop to & push]]
   [{:state from :symbol sym :top-of-stack pop}
-   {:state to :new-stack (s/replace push lambda "")}])
+   {:state to :new-stack (s/replace (apply str push) lambda "")}])
 
 (defn build-pda [tree]
   (loop [[node & remain] tree
@@ -94,8 +98,8 @@
 
 (defn validate [{:keys [start final-states delta] :as pda} deterministic]
   (assert start "PARSE CRITICIAL: expected a start state")
-  (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state")
   (assert (not-any? #(= (:symbol %) lambda) delta)
           "CRITICAL: transition function has lambda transition(s)")
+  (when deterministic (assert (not-empty final-states) "PARSE CRITICIAL: expected at least one final state"))
   (when deterministic (validate-deterministic pda))
   pda)

@@ -56,18 +56,28 @@
       )))
 
 (deftest dpda-accepting-test
-  (testing "configurations are accepted"
-    (is (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z0", :input "", :stack ""}))
-    (is (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z0", :input "", :stack "#"}))
-    (is (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z0", :input "", :stack "ABC"}))
-    (is (dpda-accepting-configuration? {:final-states #{"z1"}} {:state "z1", :input "", :stack "ABC"}))))
+  (testing "dpda configurations are accepted"
+    (is (dpda-accepting? {:final-states #{"z0"}} {:state "z0", :input "", :stack ""}))
+    (is (dpda-accepting? {:final-states #{"z0"}} {:state "z0", :input "", :stack "#"}))
+    (is (dpda-accepting? {:final-states #{"z0"}} {:state "z0", :input "", :stack "ABC"}))
+    (is (dpda-accepting? {:final-states #{"z1"}} {:state "z1", :input "", :stack "ABC"}))))
 
-(deftest not-accepting-test
-  (testing "configurations are not accepted"
-    (is (not (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z1", :input "", :stack ""})))
-    (is (not (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z1", :input "", :stack "#"})))
-    (is (not (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z0", :input "a", :stack ""})))
-    (is (not (dpda-accepting-configuration? {:final-states #{"z0"}} {:state "z0", :input "a", :stack "#"})))))
+(deftest dpda-not-accepting-test
+  (testing "dpda configurations are not accepted"
+    (is (not (dpda-accepting? {:final-states #{"z0"}} {:state "z1", :input "", :stack ""})))
+    (is (not (dpda-accepting? {:final-states #{"z0"}} {:state "z1", :input "", :stack "#"})))
+    (is (not (dpda-accepting? {:final-states #{"z0"}} {:state "z0", :input "a", :stack ""})))
+    (is (not (dpda-accepting? {:final-states #{"z0"}} {:state "z0", :input "a", :stack "#"})))))
+
+(deftest pda-accepting-test
+  (testing "pda configurations are accepted"
+    (is (pda-accepting? {} {:state "z0", :input "", :stack ""}))))
+
+(deftest pda-not-accepting-test
+  (testing "pda configurations are not accepted"
+    (is (not (pda-accepting? {} {:state "z1", :input "a", :stack "A"})))
+    (is (not (pda-accepting? {} {:state "z1", :input "a", :stack ""})))
+    (is (not (pda-accepting? {} {:state "z0", :input "", :stack "#"})))))
 
 (deftest pda-parse-test
   (testing "pda gets parsed correctly"
@@ -93,6 +103,10 @@
       ;; transition
       "(z0, a, #) -> (z2, A)"
       [[:TRANS "z0" "a" "#" "z2" "A"]]
+
+      ;; transition
+      "(z0, a, #) -> (z2, AA)"
+      [[:TRANS "z0" "a" "#" "z2" "A" "A"]]
 
       ;; complete example
       "start z0
@@ -120,6 +134,12 @@
       {:start nil
        :final-states []
        :delta {{:state "z0" :symbol "a" :top-of-stack "A"} [{:state "z2" :new-stack "B"}]}}
+
+      ;; single transition, pusing a symbol
+      "(z0, a, A) -> (z2, BB)"
+      {:start nil
+       :final-states []
+       :delta {{:state "z0" :symbol "a" :top-of-stack "A"} [{:state "z2" :new-stack "BB"}]}}
 
       ;; non-deterministic transitions
       "(z0, a, #) -> (z2, A)
