@@ -1,6 +1,8 @@
 (ns fsms.pda-test
   (:use [fsms.automata.pda]
-        [clojure.test]))
+        [clojure.test])
+  (:require [clojure.java.io :as io]
+            [fsms.core :as core]))
 
 (deftest initial-configurations-test
   (testing "the initial configuration (singular) of the DPDA is correct"
@@ -123,29 +125,29 @@
     (are [program nfa] (= nfa (build-pda (pda-parser program)))
       ;; start state
       "start z0"
-      {:start "z0" :final-states [] :delta {}}
+      {:start "z0" :final-states #{} :delta {}}
 
       ;; final state
       "final z0"
-      {:start nil :final-states ["z0"] :delta {}}
+      {:start nil :final-states #{"z0"} :delta {}}
 
       ;; single transition
       "(z0, a, A) -> (z2, B)"
       {:start nil
-       :final-states []
+       :final-states #{}
        :delta {{:state "z0" :symbol "a" :top-of-stack "A"} [{:state "z2" :new-stack "B"}]}}
 
       ;; single transition, pusing a symbol
       "(z0, a, A) -> (z2, BB)"
       {:start nil
-       :final-states []
+       :final-states #{}
        :delta {{:state "z0" :symbol "a" :top-of-stack "A"} [{:state "z2" :new-stack "BB"}]}}
 
       ;; non-deterministic transitions
       "(z0, a, #) -> (z2, A)
        (z0, a, #) -> (z5, B)"
       {:start nil
-       :final-states []
+       :final-states #{}
        :delta {{:state "z0" :symbol "a" :top-of-stack "#"} [{:state "z2" :new-stack "A"}
                                                             {:state "z5" :new-stack "B"}]}}
 
@@ -155,7 +157,7 @@
        (z0, a, A) -> (z1, #)
        (z1, a, B) -> (z2, Z)"
       {:start "z0"
-       :final-states ["z1"]
+       :final-states #{"z1"}
        :delta {{:state "z0" :symbol "a" :top-of-stack "A"} [{:state "z1" :new-stack "#"}]
                {:state "z1" :symbol "a" :top-of-stack "B"} [{:state "z2" :new-stack "Z"}]}})))
 
@@ -173,3 +175,12 @@
 
       {:delta {{:state "z0" :symbol "_" :top-of-stack "A"} []
                {:state "z0" :symbol "a" :top-of-stack "A"} []}})))
+
+(deftest dpda-integration-test
+  (testing "valid DPDA is accepted"
+    (is (= [] (core/validate-dpda (io/resource "test/pda/valid-dpda.edn")
+                                  (io/resource "test/pda/dpda-config.edn")))))
+  
+  (testing "invalid DPDA is not accepted"
+    (is (not= [] (core/validate-dpda (io/resource "test/pda/invalid-dpda.edn")
+                                     (io/resource "test/pda/dpda-config.edn"))))))

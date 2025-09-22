@@ -70,7 +70,7 @@
          deltaacc []]
     (if (not node)
       {:start start
-       :final-states (distinct (vec final))
+       :final-states (set final)
        :delta (update-vals (group-by first deltaacc) (partial map second))}
       (case (first node)
         :START (recur remain
