@@ -1,0 +1,6 @@
+start z0 z1
+final ze
+
+(z0, a) -> z2
+(z2, b) -> z2
+(z2, b) -> ze

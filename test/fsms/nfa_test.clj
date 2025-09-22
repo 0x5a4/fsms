@@ -1,6 +1,8 @@
 (ns fsms.nfa-test
   (:use [fsms.automata.nfa]
-        [clojure.test]))
+        [clojure.test])
+  (:require [clojure.java.io :as io]
+            [fsms.core :as core]))
 
 (deftest initial-configurations-test
   (testing "the initial configurations of the NFA are correct"
@@ -118,3 +120,21 @@
 
       {:start ["z1"]
        :delta {{:state "z0" :symbol "a" :to "z1"} ["z1" "z2"]}})))
+
+(deftest nfa-integration-test
+  (testing "valid NFA is accepted"
+    (is (= [] (core/validate-nfa false (io/resource "test/nfa/valid-nfa.edn")
+                                 (io/resource "test/nfa/nfa-config.edn")))))
+
+  (testing "invalid NFA is not accepted"
+    (is (not= [] (core/validate-nfa false (io/resource "test/nfa/invalid-nfa.edn")
+                                 (io/resource "test/nfa/nfa-config.edn"))))))
+
+(deftest dfa-integration-test
+  (testing "valid DFA is accepted"
+    (is (= [] (core/validate-nfa true (io/resource "test/nfa/valid-dfa.edn")
+                                 (io/resource "test/nfa/dfa-config.edn")))))
+
+  (testing "invalid DFA is not accepted"
+    (is (not= [] (core/validate-nfa true (io/resource "test/nfa/invalid-dfa.edn")
+                                 (io/resource "test/nfa/dfa-config.edn"))))))

@@ -1,0 +1,2 @@
+{:accept ["" "ab" "aaaaaab" "a"]
+ :reject ["baaaaa" "ba" "aaaabaa"]}
