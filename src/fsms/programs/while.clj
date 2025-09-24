@@ -1,4 +1,5 @@
-(ns fsms.programs.while)
+(ns fsms.programs.while
+  (:require [instaparse.core :as insta]))
 
 (def MAX-STEPS 10000)
 
@@ -8,19 +9,18 @@
     :AssignCalc     (cond (ids (second prog)) {:error true, :msg (str "Error: Assigning loop variable " (second prog))}
                           (ids (nth prog 2)) {:error true, :msg (str "Error: Reading loop variable " (nth prog 2))})
     :While (if (ids (second prog))
-            {:error true, :msg (str "Error: Reading loop variable " (second prog))}
-            (let [ress (keep #(analyse-instr % ids) (drop 2 prog))]
-              (first ress)))  
+             {:error true, :msg (str "Error: Reading loop variable " (second prog))}
+             (let [ress (keep #(analyse-instr % ids) (drop 2 prog))]
+               (first ress)))
     :Loop (if (ids (second prog))
             {:error true, :msg (str "Error: Reading loop variable " (second prog))}
             (let [ress (keep #(analyse-instr % (conj ids (second prog))) (drop 2 prog))]
               (first ress)))))
 
-(defn analyse 
+(defn analyse
   ([loop-program] (analyse loop-program #{}))
-  ([loop-program locked-ids] 
+  ([loop-program locked-ids]
    (first (keep #(analyse-instr % locked-ids) loop-program))))
-
 
 (defn interp-step [instrs env]
   (if (empty? instrs)
@@ -52,78 +52,39 @@
     (cond (not program) env
           (>= step MAX-STEPS) :timeout
           (seen [program env]) :timeout ;; we are even sure it is an infinite loop
-          :otherwise (recur (inc step) (conj seen [program env]) (interp-step program env)))))
+          :else (recur (inc step) (conj seen [program env]) (interp-step program env)))))
 
-(defn print-program [c]
-  (doseq [l c] (println l)))
+(def while-parser
+  (insta/parser
+   "<Instrs> := Instr <';'> Instrs | Instr
+    <Instr> := AssignConstant | AssignCalc | Loop | While
+    AssignCalc := Id <':='> Id Op Number 
+    AssignConstant := Id <':='> Number
+    Loop := WS <'LOOP'> Id <'DO'> Instrs <'END'> WS
+    While := WS <'WHILE'> Id <'/='> WS <'0'> WS <'DO'> Instrs <'END'> WS
+    <Op> := '+' | '-'
+    Id := WS 'x' Number WS
+    <Number> := WS #'[0-9]+' WS
+    <WS> := <#'\\s*'>"))
 
+(defn parse-while-program [s]
+  (insta/transform
+   {:Id (partial apply str)}
+   (while-parser s)))
 
-(comment
-(use 'programs.parser)
-  
-(interp [[:While "x0" [:AssignConstant "x1" "1"] [:AssignConstant "x2" "2"]]
-              [:AssignConstant "x3" "3"]]
-             {"x0" 1}
-             )
-(analyse (parse-loop-program
-           "x0 := x1 + 0;
-           LOOP x2 DO
-           x2 := x1 + 1
-           END"
-           ))
+(def loop-parser
+  (insta/parser
+   "<Instrs> := Instr <';'> Instrs | Instr
+     <Instr> := AssignConstant | AssignCalc | Loop
+     AssignCalc := Id <':='> Id Op Number 
+     AssignConstant := Id <':='> Number
+     Loop := WS <'LOOP'> Id <'DO'> Instrs <'END'> WS
+     <Op> := '+' | '-'
+     Id := WS 'x' Number WS
+     <Number> := WS #'[0-9]+' WS
+     <WS> := <#'\\s*'>"))
 
-(interp 
-  (parse-loop-program
-    "x0 := x1 + 0;
-    LOOP x2 DO
-    x0 := x0 + 1
-    END"
-    )
-  {"x1" 5
-   "x2" 4
-   }
-  )
-
-(interp 
-  (parse-while-program
-    "x0 := x1 + 0;
-    LOOP x2 DO
-    x0 := x0 + 1
-    END"
-    )
-  {"x1" 5
-   "x2" 4
-   }
-  )
-
-(require 'instaparse.failure)
-(analyse (with-out-str (instaparse.failure/pprint-failure (parse-loop-program (slurp "resources/add.while")))))
-(interp
-(parse-while-program 
-  "x1 := x2 + 0;
-  WHILE x1 /= 0 DO x1 := x1 - 1; x42 := x42 + 1 END")
-{"x1" 5
- "x2" 9 
- "x42" 8 
- }
-    
-  )
-
-(interp-step
-  (parse-loop-program
-    "LOOP x2 DO
-    x0 := x0 + 1
-    END"
-    )
-  {"x1" 5
-   "x2" 4
-   }
-  )
-
-(analyse (parse-loop-program
-           "x0 := x2 + 0"
-           )
-         #{"x2"}
-         )
-
-  )
+(defn parse-loop-program [s]
+  (insta/transform
+   {:Id (partial apply str)}
+   (loop-parser s)))

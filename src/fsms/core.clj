@@ -3,7 +3,6 @@
             [fsms.automata.pda :as pda]
             [fsms.automata.turing-machine :as tm]
             [fsms.automata.search :refer [build-accept?-fn *debug*]]
-            [fsms.programs.parser :as prog-parser]
             [fsms.programs.while :as while-progs]
             [fsms.programs.goto :as goto-progs]
             [fsms.regex :as regex]
@@ -158,7 +157,7 @@
       (str "Error during execution with input: " input " - " res))))
 
 (defn validate-loop-program [file config]
-  (let [program (prog-parser/parse-with file prog-parser/parse-loop-program)]
+  (let [program (while-progs/parse-loop-program (slurp file))]
     (if (instance? instaparse.gll.Failure program)
       [(string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
       (let [config (load-config config)
@@ -168,7 +167,7 @@
           (validate-program program while-progs/interp config))))))
 
 (defn validate-while-program [file config]
-  (let [program (prog-parser/parse-with file prog-parser/parse-while-program)]
+  (let [program (while-progs/parse-while-program (slurp file))]
     (if (instance? instaparse.gll.Failure program)
       [(string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]
       (let
@@ -179,7 +178,7 @@
           (validate-program program while-progs/interp config))))))
 
 (defn validate-goto-program [file config]
-  (let [program (prog-parser/parse-with file prog-parser/parse-goto-program)
+  (let [program (goto-progs/parse-goto-program (slurp file))
         config (load-config config)]
     (if (instance? instaparse.gll.Failure program)
       [(string/replace (with-out-str (instaparse.failure/pprint-failure program)) "\n" "\n; ")]

@@ -1,4 +1,5 @@
-(ns fsms.programs.goto)
+(ns fsms.programs.goto
+  (:require [instaparse.core :as insta]))
 
 (def MAX-STEPS 10000)
 
@@ -13,10 +14,10 @@
         instr (if (= :Label1 (first (second instr))) (get instr 2) (second instr))]
     (case (first instr)
       nil {:error (str "No more instructions found. You are probably missing a HALT-instruction.")}
-      :AssignConstant {:env (-> env 
+      :AssignConstant {:env (-> env
                                 (assoc (second instr) (parse-long (get instr 2)))
                                 (update ::pc inc))}
-      :AssignCalc {:env (-> env 
+      :AssignCalc {:env (-> env
                             (assoc (second instr) (max 0 ((case (get instr 3) "+" + "-" -)
                                                           (get env (get instr 2) 0)
                                                           (parse-long (get instr 4)))))
@@ -31,7 +32,6 @@
               {:env (update env ::pc inc)})
       :Halt {:terminated true, :env env})))
 
-
 (defn interp [program env]
   (let [program (vec program)
         markings (gather-markings program)]
@@ -45,30 +45,25 @@
             (:terminated status') (get status' :env)
             :else (recur (inc step) status')))))))
 
+(def goto-parser
+  (insta/parser
+   "<Program> := Instr+
+   Instr := WS Label1? Instr2 WS <';'> WS
+   Label1 := Label WS <':'> WS
+   Label := #'\\w'+
+   <Instr2> := AssignConstant | AssignCalc | Goto | Jump | Halt
+   AssignCalc := Id <':='> Id Op Number 
+   AssignConstant := Id <':='> Number
+   Goto := WS <'GOTO'> WS Label
+   Jump := WS <'IF'> Id <'='> WS <'0'> WS <'THEN'> WS <'GOTO'> WS Label WS
+   Halt := <'HALT'>
+   <Op> := '+' | '-'
+   Id := WS 'x' Number WS
+   <Number> := WS #'[0-9]+' WS
+   <WS> := <#'\\s*'>"))
 
-(comment
-(use 'programs.parser)
-
-(interp (parse-goto-program
-                   "M1 : x0 := x1 + 0;
-                   M2 : IF x2 = 0 THEN GOTO M6;
-                   x0 := 42;
-                   x2 := x2 - 1;
-                   M5 : GOTO M2;
-                   M6 : x0 := x0 + 1;
-                   "
-                   )
-        {"x1" 5 "x2" 4 ::pc 5}
-        )
-
-
-
-(gather-markings (parse-goto-program
-                   "M1 : x0 := x1 + 0;
-                   M2 : IF x2 = 0 THEN GOTO M6;
-                   x0 := x0 + 1;
-                   x2 := 1;
-                   M5 : GOTO M2;
-                   M6 : HALT;"
-                   )))
-
+(defn parse-goto-program [s]
+  (insta/transform
+   {:Id (partial apply str)
+    :Label (partial apply str)}
+   (goto-parser s)))
